@@ -1,0 +1,271 @@
+HOWTO - SECoP dev
+
+—— SECoP demo with NICOS ——
+
+VIRTUAL EEE
+cd ~/dev/vagrant_2.3.0
+vagrant up
+
+-One time setup-
+echo $PYTHONPATH
+/opt/epics/modules/pvaPy/0.6.0/3.15.4/lib/centos7-x86_64:/home/erikdahlback/vagrant_share/git_primary/playground
+
+sudo yum install readline-devel
+sudo -E pip install pcaspy
+
+— NICOS install on EEE virtual box 2.3.0 — 
+sudo yum install sip
+sudo yum install PyQt4
+sudo yum install PyQt4-devel
+sudo yum install PyQt4-webkit
+sudo yum install python-virtualenv
+sudo yum install numpy
+virtualenv --system-site-packages .venvs/nicos
+source .venvs/nicos/bin/activate
+pip install -U pip
+pip install gr
+pip install -i http://forge.frm2.tum.de/simple nicos
+/nfs/home/erikdahlback/.venvs/nicos$ pip install -r requirements.txt
+—Deactivate virtual python env—
+deactivate
+
+-Every time setup
+
+KAMELEON
+cd /nfs/home/erikdahlback/git_primary/kameleon
+git checkout 224370e
+python kameleon.py --file=simulators/lakeshore_336/lakeshore_336.kam
+
+IOC
+cd /nfs/home/erikdahlback/git_primary/m-epics-lakeshore336
+git checkout b2fc4fa
+iocsh startup/lakeshore336.cmd 
+
+SECOP SERVER
+git checkout e003a54
+cd ~/vagrant_share/git_primary/playground
+bin/secop-server -v epics
+
+LEWIS-SECOP-MODULE
+cd /nfs/home/erikdahlback/git_primary/lewis-secop-module
+git checkout 2fa5a2b
+
+ 
+LEWIS
+cd ~/vagrant_share/git_primary/lewis
+git checkout d5f0595 + local files
+python setup.py install --user
+lewis -a /nfs/home/erikdahlback/git_primary/ -k lewis-secop-module  secop
+
+NICOS
+source .venvs/nicos/bin/activate
+nicos-gui
+
+10.4.3.36:1301
+guest
+essiipguest
+
+
+— NICOS with SECOP start
+/nfs/home/erikdahlback/.venvs/nicos/custom/essiip/setups/secop_lakeshore336.py
+ INSTRUMENT=essiip nicos-demo -MEW
+
+
+
+————————————————————————————————————————————————————————————————————————
+
+
+
+
+
+export PYTHONPATH=/opt/epics/modules/pvaPy/0.6.0/3.15.4/lib/centos7-x86_64
+export EPICS_CA_ADDR_LIST=localhost
+
+# Remove firewall entries to enable PVaccess
+  echo 'Firewall looks like:'
+  sudo iptables -L
+  sudo iptables -F INPUT
+  sudo iptables -F FORWARD
+
+Add yourself as a sudoer
+$su
+$visudo
+erikdahlback ALL=(ALL) ALL
+
+
+— Mockup, LS336 on same network as MAC —————————
+
+Mac running 
+- IOC
+- SECoP server
+- SECoP client
+
+IOC
+$ cd /nfs/home/erikdahlback/git_primary/m-epics-lakeshore336
+$ git checout dev
+$ vim startup/lakeshore336.cmd
+  ipdate LS336 IP
+$ iocsh startup/lakeshore336.cmd
+
+SECoP server
+$ cd /nfs/home/erikdahlback/git_primary/playground
+$ git checkout test
+$ export PYTHONPATH=/opt/epics/modules/pvaPy/0.6.0/3.15.4/lib/centos7-x86_64
+$ bin/secop-server test -v
+
+SECoP client
+$ telnet localhost 10767
+$ poll EPICS:value
+$ poll EPICS:target 
+$ change EPICS:target 305
+$ change EPICS:value 300  //ERROR
+$ describe
+
+http://www.jsoneditoronline.org
+————————————————————————————————————————————————————————————————————————
+
+
+
+SECoP mockup, all on MAC and kameleon ———————————————
+
+- Telnet -
+$ telnet localhost 10767
+
+- Playground -
+$ git checkout 7b7cc8915d25430c8d3c0c412fc0df2899479e42
+/nfs/home/erikdahlback/git_primary/playound$ bin/secop-server -v test
+
+- IOC -
+/nfs/home/erikdahlback/git_primary/m-epics-lakeshore336$ git checkout a823ede8e0afbe1a8495c12a762325b07d1c1568
+
+Update startup/lakeshore336.cmd with correct port and IP
+
+$ iocsh startup/lakeshore336.cmd
+
+- Kameleon -
+/nfs/home/erikdahlback/git_primary/kameleon$ python kameleon.py --file=simulators/lakeshore_336/lakeshore_336.kam 
+ 
+- interact in telnet consol -
+describe
+poll EPICS
+poll EPICS:value
+poll EPICS:target
+change EPICS:target
+
+
+- EPICS v4 stuff -
+$pvlist
+$pvput
+$pvget
+
+IOC>dbl
+
+- JSON -
+http://www.jsoneditoronline.org
+
+------------------------------------------------------------------------
+
+
+— Mockup, ESSIP lab HW + MAC ——
+Tunnelblick
+
+Point out the EPICS server
+export EPICS_CA_ADDR_LIST=194.47.242.253
+
+
+
+
+Install Centos over network, DM 7.1 and install LDAP, see https://ess-ics.atlassian.net/wiki/display/DE/ESS+physical+DM+setup
+
+Clone playground into ~/repo/
+
+$ git clone ssh://edahlback@forge.frm2.tum.de:29418/sine2020/secop/playground
+
+$  pip install -r requirements.txt 
+
+To push changes
+$ 
+
+Update playground/etc/test.cfg
+bindto=0.0.0.0
+
+
+Open firewall
+sudo vim /etc/sysconfig/iptables
+-A INPUT -p tcp -m state —state NEW -m tcp —dport 10767 -j ACCEPT
+
+Start server
+$ bin/secop-server test
+
+Start client
+telnet localhost 10767
+———————————————————————————————————————————————————————————————————
+
+Enable NFS
+Clone Torstens bin2 git
+femneutroneR5?
+$ git clone erikdahlback@10.4.5.10:~/repo/bin2/.git ~/dev/git_primary/bin2
+$ cd ~/repo/bin2
+$ sudo ./install_autofs.sh
+
+/nfs/home/erikdahlback/ is now available
+
+SSH add key to server
+
+$ ssh-copy-id erikdahlback@10.0.5.141
+
+If CSS does not show PVs
+Launch CS-Studio, open the Preference dialog and locate the CSS Core -> Diirt preferences page. Press the Browse button and select the diirt folder inside the configuration one. Conf file located in /nfs/…
+
+
+Some IPs
+mesi-fitlet01 10.0.6.0   SHA256:IdC7DrQFXZmEVIh01wGPhLHhdxreDK6wnhvc7kTW6YI
+mesi-fitlet02 10.0.5.141
+CI0011700     10.0.7.166
+————————————————————————————————————————————————————————————————————————
+
+- - - EPICS - - - 
+
+make install LIBVERSION=erik_test2
+
+iocsh -3.14.12.5 -r niklasmodule.niklasclaeson -c ‘dblRecords(mytemplate.db)’
+
+epicsEnvShow
+epicsEnvSet
+
+/export/startup/boot/[HOST_NAME]/[STARTUP_SCRIPT]
+
+ics-boot-01.esss.lu.se
+
+on mac smb://nfs01.esss.lu.se/erikdahlback
+
+bara bygga för x86
+EXCLUDE_ARCHS += eldk
+EXCLUDE_VERSIONS=3.14.12.5
+
+
+
+————————————————————————————————————————————————————————————————————————
+SECoP - EPICS translation
+
+export PYTHONPATH=$PYTHONPATH":/nfs/home/erikdahlback/git_primary/playground"
+export PATH=$PATH":/home/erikdahlback/.local/bin"
+
+echo $PATH
+/opt/epics/modules/pvAccessCPP/5.0.0/3.15.4/bin/centos7-x86_64:/opt/epics/bases/base-3.15.4/bin/centos7-x86_64:/opt/epics/modules/environment/1.8.2/3.15.4/bin/centos7-x86_64:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:/home/erikdahlback/.local/bin
+
+pip install "lewis[epics]" (not latest version)
+git pull
+python setup.py install --user
+
+pwd
+/nfs/home/erikdahlback/git_primary/lewis
+
+lewis -a /nfs/home/erikdahlback/dev/ -k devices -o debug secop
+
+caput lakeshore_336:target 329
+
+ which lewis
+/usr/bin/which: no lewis in (/opt/epics/modules/pvAccessCPP/5.0.0/3.15.4/bin/centos7-x86_64:/opt/epics/bases/base-3.15.4/bin/centos7-x86_64:/opt/epics/modules/environment/1.8.2/3.15.4/bin/centos7-x86_64:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin)
+
+————————————————————————————————————————————————————————————————————————

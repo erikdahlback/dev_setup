@@ -1,0 +1,31 @@
+New kernal module
+- new c file
+- add in Makefile
+- add Module in Kconfig
+
+- edit c driver
+- compile in devshell
+  make C=1 drivers/rtc/sixa.ko (storage2/build/fritos/jenkins170511/builds/fritos/workspace/sources/linux-axis/)
+
+- rebuild devicetree and kimage bitbakeshell 
+  ffbuild devicetree
+  cp tmp/sysroots/x86_64-linux/usr/share/axis-top-dir/board.dtb tmp/deploy/images/fritos/board-fritos.dtb
+  rm new -rf && mkimage kimage -o new
+
+- reboot qemu qemushell
+  axis/qemu --machine fritos --netboot
+
+- load new image bitbakeshell
+  boot_axis -d br0 -i new/*.kimage
+
+- log into qemu
+  ff shell
+
+- check device tree
+  cat /proc/device-tree/amba/i2c@f801b
+
+- push the module 
+  ff push /storage2/build/fritos/jenkins170511/builds/fritos/tmp/work/fritos-poky-linux-gnueabi/linux-axis/4.9.27-2-r0/linux-axis-4.9.27-2/drivers/rtc/sixa.ko
+
+- load the module 
+  insmod sixa.ko
